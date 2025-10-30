@@ -16,6 +16,7 @@ export type WidgetVariantProps = {
     config: WidgetVariantConfig;
     value: number;
     onValueChange: (value: number) => void;
+    compact?: boolean;
 };
 export declare const REWARD_TOLERANCE = 0.25;
 export declare function computeTravelMinutes(speedKnots: number): number;
@@ -23,4 +24,4 @@ export declare function computeMinutesDelta(speedKnots: number): number;
 export declare function computeReductionPct(speedKnots: number): number;
 export declare function computeCo2DeltaKg(speedKnots: number): number;
 export declare function isRewardUnlocked(config: WidgetVariantConfig, value: number): boolean;
-export default function WidgetVariant({ config, value, onValueChange }: WidgetVariantProps): import("react/jsx-runtime").JSX.Element;
+export default function WidgetVariant({ config, value, onValueChange, compact }: WidgetVariantProps): import("react/jsx-runtime").JSX.Element;

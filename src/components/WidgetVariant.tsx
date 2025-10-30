@@ -22,6 +22,7 @@ export type WidgetVariantProps = {
   config: WidgetVariantConfig;
   value: number;
   onValueChange: (value: number) => void;
+  compact?: boolean;
 };
 
 export const REWARD_TOLERANCE = 0.25;
@@ -79,7 +80,7 @@ function formatCo2Delta(deltaKg: number) {
   return `Adds ${rounded} kg CO₂`;
 }
 
-export default function WidgetVariant({ config, value, onValueChange }: WidgetVariantProps) {
+export default function WidgetVariant({ config, value, onValueChange, compact = false }: WidgetVariantProps) {
   const reductionPct = useMemo(() => computeReductionPct(value), [value]);
   const travelMinutes = useMemo(() => computeTravelMinutes(value), [value]);
   const minutesDelta = useMemo(() => computeMinutesDelta(value), [value]);
@@ -102,19 +103,30 @@ export default function WidgetVariant({ config, value, onValueChange }: WidgetVa
     : 0;
   const clampedRewardMarkerPercent = Math.min(Math.max(rewardMarkerPercent, 0), 100);
 
+  const isCompact = compact;
+  const showContext = !isCompact;
+  const showHints = !isCompact;
+  const showFootnote = !isCompact && Boolean(config.footnote);
+
   return (
     <article
-      className={clsx("widget-card", `widget-card--${config.variant}`)}
+      className={clsx(
+        "widget-card",
+        `widget-card--${config.variant}`,
+        isCompact && "widget-card--compact"
+      )}
       style={config.variant === "mood" ? { background: moodBackground } : undefined}
     >
-      <header className="widget-card__header">
-        <div className="widget-card__topline">
-          <span className="widget-card__operator">Tallink · Megastar</span>
-          {config.badge && <span className="widget-card__badge">{config.badge}</span>}
-        </div>
-        <h2 className="widget-card__route">Helsinki → Tallinn</h2>
-        <span className="widget-card__meta">Usual pace 2h 00m · Tonight&apos;s sea state calm</span>
-      </header>
+      {showContext && (
+        <header className="widget-card__header">
+          <div className="widget-card__topline">
+            <span className="widget-card__operator">Tallink · Megastar</span>
+            {config.badge && <span className="widget-card__badge">{config.badge}</span>}
+          </div>
+          <h2 className="widget-card__route">Helsinki → Tallinn</h2>
+          <span className="widget-card__meta">Usual pace 2h 00m · Tonight&apos;s sea state calm</span>
+        </header>
+      )}
 
       <div className="widget-card__control">
         <label className="widget-card__slider-label" htmlFor={`${config.id}-slider`}>
@@ -235,19 +247,19 @@ export default function WidgetVariant({ config, value, onValueChange }: WidgetVa
         )}
       </div>
 
-      {config.variant === "reward-marker" && (
+      {config.variant === "reward-marker" && showHints && (
         <p className="widget-card__hint">
           Hit the marker for a small thank-you: €{(config.rewardValueEur ?? 0).toFixed(2)} kiosk voucher.
         </p>
       )}
 
-      {config.variant === "co2-only" && (
+      {config.variant === "co2-only" && showHints && (
         <p className="widget-card__hint">
           This view focuses purely on emissions. Shift left to see the gains; shift right and you burn extra fuel with no perks.
         </p>
       )}
 
-      {config.footnote && <p className="widget-card__footnote">{config.footnote}</p>}
+      {showFootnote && config.footnote && <p className="widget-card__footnote">{config.footnote}</p>}
     </article>
   );
 }

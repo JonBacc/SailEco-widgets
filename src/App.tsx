@@ -43,6 +43,8 @@ type WidgetValues = Record<WidgetId, number>;
 
 type SubmissionState = "idle" | "submitting" | "success" | "error";
 
+const BASE_FARE_EUR = 129;
+
 function encodeFormData(formData: FormData) {
   const params = new URLSearchParams();
   formData.forEach((value, key) => {
@@ -68,6 +70,10 @@ function formatCo2DeltaSigned(deltaKg: number) {
   return deltaKg > 0 ? `-${rounded}` : `+${rounded}`;
 }
 
+function formatSpeedKnots(speed: number) {
+  return speed.toFixed(2);
+}
+
 export default function App() {
   const [values, setValues] = useState<WidgetValues>(() => {
     return WIDGET_CONFIGS.reduce<WidgetValues>((accumulator, widget) => {
@@ -77,6 +83,10 @@ export default function App() {
   });
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [stageIndex, setStageIndex] = useState(0);
+
+  const totalStages = WIDGET_CONFIGS.length + 2; // intro + widget panels + final submit
+  const isFinalStage = stageIndex === totalStages - 1;
 
   const widgetSummaries = useMemo(() => {
     return WIDGET_CONFIGS.map((config) => {
@@ -107,6 +117,18 @@ export default function App() {
     }));
   };
 
+  const handleStartFlow = () => {
+    setStageIndex(1);
+  };
+
+  const handleAdvanceStage = () => {
+    setStageIndex((previous) => Math.min(previous + 1, totalStages - 1));
+  };
+
+  const handleResetFlow = () => {
+    setStageIndex(0);
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmissionState("submitting");
@@ -131,86 +153,175 @@ export default function App() {
 
   return (
     <div className="page-shell">
-      <header className="masthead">
-        <span className="masthead__eyebrow">SailEco demo</span>
-        <h1 className="masthead__title">A few looks at the SailEco speed widget</h1>
-        <p className="masthead__lede">
-          Same Megastar route, a few different UI styles. Drag each slider to explore how copy, colour, and rewards shift for a
-          greener pace. When you are done, submit the selections at the bottom by clicking "Submit widget values".
-          Note that this form is totally anonymous, and we won&apos;t be able to link your selections back to you.
+      <form
+        className="stage-form"
+        name="widget-values"
+        method="POST"
+        data-netlify="true"
+        data-netlify-honeypot="bot-field"
+        onSubmit={handleSubmit}
+      >
+        <input type="hidden" name="form-name" value="widget-values" />
+        <p className="honeypot" aria-hidden="true">
+          <label>
+            Don&apos;t fill this out if you are human:
+            <input name="bot-field" />
+          </label>
         </p>
-      </header>
 
-      <main>
-        <form
-          className="widget-form"
-          name="widget-values"
-          method="POST"
-          data-netlify="true"
-          data-netlify-honeypot="bot-field"
-          onSubmit={handleSubmit}
-        >
-          <input type="hidden" name="form-name" value="widget-values" />
-          <p className="honeypot" aria-hidden="true">
-            <label>
-              Don&apos;t fill this out if you are human:
-              <input name="bot-field" />
-            </label>
-          </p>
-
-          <section className="widget-stack">
-            {WIDGET_CONFIGS.map((config, index) => (
-              <div key={config.id} className="widget-panel">
-                <WidgetVariant
-                  config={config}
-                  value={values[config.id]}
-                  onValueChange={(value) => handleWidgetChange(config.id, value)}
-                />
-                {index < WIDGET_CONFIGS.length - 1 && <div className="widget-divider" role="presentation" />}
+        <div className="view-viewport">
+          <div
+            className="view-rail"
+            style={{ transform: `translateX(-${stageIndex * 100}%)` }}
+            aria-live="polite"
+          >
+            <section className="view-panel view-panel--intro" aria-hidden={stageIndex !== 0}>
+              <div className="landing-card">
+                <span className="masthead__eyebrow">SailEco demo</span>
+                <h1 className="landing-card__title">Explore how the SailEco widget could live in booking flows</h1>
+                <p className="landing-card__lede">
+                  You will step through four mock booking moments from Tallink Siljaline. Each screen keeps the same layout, but the
+                  widget above the price changes. Adjust the slider, then continue to the next mock checkout step.
+                </p>
+                <button type="button" className="primary-button" onClick={handleStartFlow}>
+                  Start submitting form
+                </button>
               </div>
+            </section>
+
+            {WIDGET_CONFIGS.map((config, index) => (
+              <section
+                key={config.id}
+                className="view-panel view-panel--booking"
+                aria-hidden={stageIndex !== index + 1}
+              >
+                <div className="booking-shell">
+                  <header className="booking-shell__header">
+                    <div>
+                      <p className="booking-shell__operator">Tallink Siljaline · Megastar</p>
+                      <h2 className="booking-shell__route">Helsinki → Tallinn · Evening departure</h2>
+                    </div>
+                    <div className="booking-shell__header-aux">
+                      <div className="booking-shell__meta">
+                        <span>Travel date: 30 Oct 2025</span>
+                        <span>Passengers: 2 adults</span>
+                        <span>Cabin: A-Class</span>
+                      </div>
+                      <button type="button" className="to-start-button" onClick={handleResetFlow}>
+                        To the start
+                      </button>
+                    </div>
+                  </header>
+
+                  <div className="booking-shell__grid">
+                    <div className="booking-shell__summary">
+                      <div className="booking-shell__itinerary booking-shell__itinerary--inline">
+                        <div>
+                          <p className="booking-shell__port-label">Depart</p>
+                          <p className="booking-shell__port-value">Helsinki West Harbour T2</p>
+                          <p className="booking-shell__time">18:30</p>
+                        </div>
+                        <div className="booking-shell__itinerary-arrow" aria-hidden="true">→</div>
+                        <div>
+                          <p className="booking-shell__port-label">Arrive</p>
+                          <p className="booking-shell__port-value">Tallinn Old City Harbour D</p>
+                          <p className="booking-shell__time">20:30 (usual pace)</p>
+                        </div>
+                      </div>
+
+                      <div className="booking-shell__widget-slot">
+                        <WidgetVariant
+                          config={config}
+                          value={values[config.id]}
+                          onValueChange={(value) => handleWidgetChange(config.id, value)}
+                          compact
+                        />
+                      </div>
+
+                      <dl className="booking-shell__fare-breakdown">
+                        <div>
+                          <dt>Cabin fare</dt>
+                          <dd>€{BASE_FARE_EUR}</dd>
+                        </div>
+                        <div>
+                          <dt>Port fees</dt>
+                          <dd>€18</dd>
+                        </div>
+                        <div>
+                          <dt>Carbon offset</dt>
+                          <dd>Included</dd>
+                        </div>
+                        <div className="booking-shell__fare-total">
+                          <dt>Total today</dt>
+                          <dd>€{BASE_FARE_EUR + 18}</dd>
+                        </div>
+                      </dl>
+                      <div className="booking-shell__actions">
+                        <button type="button" className="pay-button" onClick={handleAdvanceStage}>
+                          Pay (Move to next widget)
+                        </button>
+                      </div>
+                    </div>
+                    <span className="widget-step-indicator widget-step-indicator--footer">
+                      Widget {index + 1} of {WIDGET_CONFIGS.length}
+                    </span>
+                  </div>
+                </div>
+              </section>
             ))}
-          </section>
 
-          {widgetSummaries.map((summary) => {
-            const widgetLabel = summary.badge ?? summary.variant;
-            return (
-              <Fragment key={`hidden-${summary.id}`}>
-                <input type="hidden" name={`${summary.id}_widget_name`} value={widgetLabel} />
-                <input
-                  type="hidden"
-                  name={`${summary.id}_arrival_minutes_delta`}
-                  value={formatMinutesDelta(summary.minutesDelta)}
-                />
-                <input
-                  type="hidden"
-                  name={`${summary.id}_co2_delta_kg`}
-                  value={formatCo2DeltaSigned(summary.co2DeltaKg)}
-                />
-              </Fragment>
-            );
-          })}
-
-          <div className="form-actions">
-            <button type="submit" className="submit-button" disabled={submissionState === "submitting"}>
-              {submissionState === "submitting" ? "Submitting…" : "Submit widget values"}
-            </button>
-            {submissionState === "success" && (
-              <p className="form-feedback form-feedback--success">Thanks! The widget selections were sent.</p>
-            )}
-            {submissionState === "error" && (
-              <p className="form-feedback form-feedback--error">
-                Something went wrong. {errorMessage ?? "Please try again."}
-              </p>
-            )}
+            <section className="view-panel view-panel--final" aria-hidden={!isFinalStage}>
+              <div className="final-card">
+                <h2>Send the SailEco widget selections</h2>
+                <p>
+                  Thanks for walking through the mock booking flow. We only capture widget speeds and their travel / CO₂ deltas to
+                  understand which copy resonates. We never ask for names, contact details, or anything personally identifiable.
+                </p>
+                <button type="button" className="to-start-button to-start-button--inline" onClick={handleResetFlow}>
+                  To the start
+                </button>
+                <div className="form-actions">
+                  <button type="submit" className="submit-button" disabled={submissionState === "submitting"}>
+                    {submissionState === "submitting" ? "Submitting…" : "Submit widget values"}
+                  </button>
+                  {submissionState === "success" && (
+                    <p className="form-feedback form-feedback--success">Thanks! The widget selections were sent.</p>
+                  )}
+                  {submissionState === "error" && (
+                    <p className="form-feedback form-feedback--error">
+                      Something went wrong. {errorMessage ?? "Please try again."}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
           </div>
-        </form>
-      </main>
+        </div>
 
-      <footer className="page-footer">
-        <p>
-          All widget values are submitted anonymously for demo purposes. No personal data is collected. This helps us evaluate what kind of slider works the best.
-        </p>
-      </footer>
+        {widgetSummaries.map((summary) => {
+          const widgetLabel = summary.badge ?? summary.variant;
+          return (
+            <Fragment key={`hidden-${summary.id}`}>
+              <input type="hidden" name={`${summary.id}_widget_name`} value={widgetLabel} />
+              <input
+                type="hidden"
+                name={`${summary.id}_arrival_minutes_delta`}
+                value={formatMinutesDelta(summary.minutesDelta)}
+              />
+              <input
+                type="hidden"
+                name={`${summary.id}_co2_delta_kg`}
+                value={formatCo2DeltaSigned(summary.co2DeltaKg)}
+              />
+              <input
+                type="hidden"
+                name={`${summary.id}_speed_kn`}
+                value={formatSpeedKnots(summary.selectedSpeedKn)}
+              />
+            </Fragment>
+          );
+        })}
+      </form>
     </div>
   );
 }
