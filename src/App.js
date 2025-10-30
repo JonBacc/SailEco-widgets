@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import WidgetVariant, { computeCo2DeltaKg, computeMinutesDelta, computeReductionPct, computeTravelMinutes, isRewardUnlocked, SPEED_DEFAULT, } from "./components/WidgetVariant";
 const WIDGET_CONFIGS = [
     {
@@ -36,6 +36,21 @@ function encodeFormData(formData) {
     });
     return params.toString();
 }
+function formatMinutesDelta(minutesDelta) {
+    if (minutesDelta === 0) {
+        return "0";
+    }
+    const rounded = Math.round(Math.abs(minutesDelta));
+    return minutesDelta > 0 ? `+${rounded}` : `-${rounded}`;
+}
+function formatCo2DeltaSigned(deltaKg) {
+    if (deltaKg === 0) {
+        return "0";
+    }
+    const rounded = Math.round(Math.abs(deltaKg));
+    // Positive delta indicates a CO₂ saving, which we report as a negative change in emissions.
+    return deltaKg > 0 ? `-${rounded}` : `+${rounded}`;
+}
 export default function App() {
     const [values, setValues] = useState(() => {
         return WIDGET_CONFIGS.reduce((accumulator, widget) => {
@@ -65,28 +80,6 @@ export default function App() {
             };
         });
     }, [values]);
-    const widgetNarrative = useMemo(() => {
-        const formatMinutes = (delta) => {
-            if (delta > 0)
-                return `+${delta}`;
-            if (delta < 0)
-                return `${delta}`;
-            return "+0";
-        };
-        const formatImpact = (deltaKg) => {
-            const magnitude = Math.round(Math.abs(deltaKg));
-            const prefix = deltaKg >= 0 ? "-" : "+";
-            return `${prefix}${magnitude}`;
-        };
-        return widgetSummaries
-            .map((summary) => {
-            const label = summary.badge ? summary.badge.toUpperCase() : summary.variant.toUpperCase();
-            const travelSnippet = `Travel Time ${formatMinutes(summary.minutesDelta)}min.`;
-            const impactSnippet = `Impact ${formatImpact(summary.co2DeltaKg)}kg CO₂.`;
-            return `${label}: ${travelSnippet} ${impactSnippet}`;
-        })
-            .join("\n");
-    }, [widgetSummaries]);
     const handleWidgetChange = (id, value) => {
         setValues((previous) => ({
             ...previous,
@@ -100,7 +93,6 @@ export default function App() {
         try {
             const form = event.currentTarget;
             const formData = new FormData(form);
-            formData.set("widgetNarrative", widgetNarrative);
             await fetch("/", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -113,5 +105,8 @@ export default function App() {
             setSubmissionState("error");
         }
     };
-    return (_jsxs("div", { className: "page-shell", children: [_jsxs("header", { className: "masthead", children: [_jsx("span", { className: "masthead__eyebrow", children: "SailEco demo" }), _jsx("h1", { className: "masthead__title", children: "A few looks at the SailEco speed widget" }), _jsx("p", { className: "masthead__lede", children: "Same Megastar route, a few different UI styles. Drag each slider to explore how copy, colour, and rewards shift for a greener pace. When you are done, submit the selections at the bottom by clicking \"Submit widget values\". Note that this form is totally anonymous, and we won't be able to link your selections back to you." })] }), _jsx("main", { children: _jsxs("form", { className: "widget-form", name: "widget-values", method: "POST", "data-netlify": "true", "data-netlify-honeypot": "bot-field", onSubmit: handleSubmit, children: [_jsx("input", { type: "hidden", name: "form-name", value: "widget-values" }), _jsx("p", { className: "honeypot", "aria-hidden": "true", children: _jsxs("label", { children: ["Don't fill this out if you are human:", _jsx("input", { name: "bot-field" })] }) }), _jsx("section", { className: "widget-stack", children: WIDGET_CONFIGS.map((config, index) => (_jsxs("div", { className: "widget-panel", children: [_jsx(WidgetVariant, { config: config, value: values[config.id], onValueChange: (value) => handleWidgetChange(config.id, value) }), index < WIDGET_CONFIGS.length - 1 && _jsx("div", { className: "widget-divider", role: "presentation" })] }, config.id))) }), _jsx("input", { type: "hidden", name: "widgetNarrative", value: widgetNarrative }), _jsxs("div", { className: "form-actions", children: [_jsx("button", { type: "submit", className: "submit-button", disabled: submissionState === "submitting", children: submissionState === "submitting" ? "Submitting…" : "Submit widget values" }), submissionState === "success" && (_jsx("p", { className: "form-feedback form-feedback--success", children: "Thanks! The widget selections were sent." })), submissionState === "error" && (_jsxs("p", { className: "form-feedback form-feedback--error", children: ["Something went wrong. ", errorMessage ?? "Please try again."] }))] })] }) }), _jsx("footer", { className: "page-footer", children: _jsx("p", { children: "All widget values are submitted anonymously for demo purposes. No personal data is collected. This helps us evaluate what kind of slider works the best." }) })] }));
+    return (_jsxs("div", { className: "page-shell", children: [_jsxs("header", { className: "masthead", children: [_jsx("span", { className: "masthead__eyebrow", children: "SailEco demo" }), _jsx("h1", { className: "masthead__title", children: "A few looks at the SailEco speed widget" }), _jsx("p", { className: "masthead__lede", children: "Same Megastar route, a few different UI styles. Drag each slider to explore how copy, colour, and rewards shift for a greener pace. When you are done, submit the selections at the bottom by clicking \"Submit widget values\". Note that this form is totally anonymous, and we won't be able to link your selections back to you." })] }), _jsx("main", { children: _jsxs("form", { className: "widget-form", name: "widget-values", method: "POST", "data-netlify": "true", "data-netlify-honeypot": "bot-field", onSubmit: handleSubmit, children: [_jsx("input", { type: "hidden", name: "form-name", value: "widget-values" }), _jsx("p", { className: "honeypot", "aria-hidden": "true", children: _jsxs("label", { children: ["Don't fill this out if you are human:", _jsx("input", { name: "bot-field" })] }) }), _jsx("section", { className: "widget-stack", children: WIDGET_CONFIGS.map((config, index) => (_jsxs("div", { className: "widget-panel", children: [_jsx(WidgetVariant, { config: config, value: values[config.id], onValueChange: (value) => handleWidgetChange(config.id, value) }), index < WIDGET_CONFIGS.length - 1 && _jsx("div", { className: "widget-divider", role: "presentation" })] }, config.id))) }), widgetSummaries.map((summary) => {
+                            const widgetLabel = summary.badge ?? summary.variant;
+                            return (_jsxs(Fragment, { children: [_jsx("input", { type: "hidden", name: `${summary.id}_widget_name`, value: widgetLabel }), _jsx("input", { type: "hidden", name: `${summary.id}_arrival_minutes_delta`, value: formatMinutesDelta(summary.minutesDelta) }), _jsx("input", { type: "hidden", name: `${summary.id}_co2_delta_kg`, value: formatCo2DeltaSigned(summary.co2DeltaKg) })] }, `hidden-${summary.id}`));
+                        }), _jsxs("div", { className: "form-actions", children: [_jsx("button", { type: "submit", className: "submit-button", disabled: submissionState === "submitting", children: submissionState === "submitting" ? "Submitting…" : "Submit widget values" }), submissionState === "success" && (_jsx("p", { className: "form-feedback form-feedback--success", children: "Thanks! The widget selections were sent." })), submissionState === "error" && (_jsxs("p", { className: "form-feedback form-feedback--error", children: ["Something went wrong. ", errorMessage ?? "Please try again."] }))] })] }) }), _jsx("footer", { className: "page-footer", children: _jsx("p", { children: "All widget values are submitted anonymously for demo purposes. No personal data is collected. This helps us evaluate what kind of slider works the best." }) })] }));
 }

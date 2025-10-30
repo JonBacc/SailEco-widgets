@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Fragment, useMemo, useState } from "react";
 import WidgetVariant, {
   computeCo2DeltaKg,
   computeMinutesDelta,
@@ -51,6 +51,23 @@ function encodeFormData(formData: FormData) {
   return params.toString();
 }
 
+function formatMinutesDelta(minutesDelta: number) {
+  if (minutesDelta === 0) {
+    return "0";
+  }
+  const rounded = Math.round(Math.abs(minutesDelta));
+  return minutesDelta > 0 ? `+${rounded}` : `-${rounded}`;
+}
+
+function formatCo2DeltaSigned(deltaKg: number) {
+  if (deltaKg === 0) {
+    return "0";
+  }
+  const rounded = Math.round(Math.abs(deltaKg));
+  // Positive delta indicates a CO₂ saving, which we report as a negative change in emissions.
+  return deltaKg > 0 ? `-${rounded}` : `+${rounded}`;
+}
+
 export default function App() {
   const [values, setValues] = useState<WidgetValues>(() => {
     return WIDGET_CONFIGS.reduce<WidgetValues>((accumulator, widget) => {
@@ -83,29 +100,6 @@ export default function App() {
     });
   }, [values]);
 
-  const widgetNarrative = useMemo(() => {
-    const formatMinutes = (delta: number) => {
-      if (delta > 0) return `+${delta}`;
-      if (delta < 0) return `${delta}`;
-      return "+0";
-    };
-
-    const formatImpact = (deltaKg: number) => {
-      const magnitude = Math.round(Math.abs(deltaKg));
-      const prefix = deltaKg >= 0 ? "-" : "+";
-      return `${prefix}${magnitude}`;
-    };
-
-    return widgetSummaries
-      .map((summary) => {
-        const label = summary.badge ? summary.badge.toUpperCase() : summary.variant.toUpperCase();
-        const travelSnippet = `Travel Time ${formatMinutes(summary.minutesDelta)}min.`;
-        const impactSnippet = `Impact ${formatImpact(summary.co2DeltaKg)}kg CO₂.`;
-        return `${label}: ${travelSnippet} ${impactSnippet}`;
-      })
-      .join("\n");
-  }, [widgetSummaries]);
-
   const handleWidgetChange = (id: WidgetId, value: number) => {
     setValues((previous) => ({
       ...previous,
@@ -121,7 +115,6 @@ export default function App() {
     try {
       const form = event.currentTarget;
       const formData = new FormData(form);
-      formData.set("widgetNarrative", widgetNarrative);
 
       await fetch("/", {
         method: "POST",
@@ -178,7 +171,24 @@ export default function App() {
             ))}
           </section>
 
-          <input type="hidden" name="widgetNarrative" value={widgetNarrative} />
+          {widgetSummaries.map((summary) => {
+            const widgetLabel = summary.badge ?? summary.variant;
+            return (
+              <Fragment key={`hidden-${summary.id}`}>
+                <input type="hidden" name={`${summary.id}_widget_name`} value={widgetLabel} />
+                <input
+                  type="hidden"
+                  name={`${summary.id}_arrival_minutes_delta`}
+                  value={formatMinutesDelta(summary.minutesDelta)}
+                />
+                <input
+                  type="hidden"
+                  name={`${summary.id}_co2_delta_kg`}
+                  value={formatCo2DeltaSigned(summary.co2DeltaKg)}
+                />
+              </Fragment>
+            );
+          })}
 
           <div className="form-actions">
             <button type="submit" className="submit-button" disabled={submissionState === "submitting"}>
