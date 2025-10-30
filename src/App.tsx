@@ -72,6 +72,7 @@ export default function App() {
       return {
         id: config.id,
         variant: config.variant,
+        badge: config.badge,
         selectedSpeedKn: Number(selectedSpeed.toFixed(2)),
         travelMinutes,
         minutesDelta,
@@ -82,7 +83,28 @@ export default function App() {
     });
   }, [values]);
 
-  const summaryJson = useMemo(() => JSON.stringify(widgetSummaries), [widgetSummaries]);
+  const widgetNarrative = useMemo(() => {
+    const formatMinutes = (delta: number) => {
+      if (delta > 0) return `+${delta}`;
+      if (delta < 0) return `${delta}`;
+      return "+0";
+    };
+
+    const formatImpact = (deltaKg: number) => {
+      const magnitude = Math.round(Math.abs(deltaKg));
+      const prefix = deltaKg >= 0 ? "-" : "+";
+      return `${prefix}${magnitude}`;
+    };
+
+    return widgetSummaries
+      .map((summary) => {
+        const label = summary.badge ? summary.badge.toUpperCase() : summary.variant.toUpperCase();
+        const travelSnippet = `Travel Time ${formatMinutes(summary.minutesDelta)}min.`;
+        const impactSnippet = `Impact ${formatImpact(summary.co2DeltaKg)}kg CO₂.`;
+        return `${label}: ${travelSnippet} ${impactSnippet}`;
+      })
+      .join("\n");
+  }, [widgetSummaries]);
 
   const handleWidgetChange = (id: WidgetId, value: number) => {
     setValues((previous) => ({
@@ -99,7 +121,7 @@ export default function App() {
     try {
       const form = event.currentTarget;
       const formData = new FormData(form);
-      formData.set("widgetSummaryJson", summaryJson);
+      formData.set("widgetNarrative", widgetNarrative);
 
       await fetch("/", {
         method: "POST",
@@ -121,8 +143,8 @@ export default function App() {
         <h1 className="masthead__title">A few looks at the SailEco speed widget</h1>
         <p className="masthead__lede">
           Same Megastar route, a few different UI styles. Drag each slider to explore how copy, colour, and rewards shift for a
-          greener pace. When you are done, submit the selections at the bottom by clicking "Submit widget values". 
-          Note that this form is totally anonymous, and we won't be able to link your selections back to you.
+          greener pace. When you are done, submit the selections at the bottom by clicking "Submit widget values".
+          Note that this form is totally anonymous, and we won&apos;t be able to link your selections back to you.
         </p>
       </header>
 
@@ -138,71 +160,32 @@ export default function App() {
           <input type="hidden" name="form-name" value="widget-values" />
           <p className="honeypot" aria-hidden="true">
             <label>
-              Don’t fill this out if you are human:
+              Don&apos;t fill this out if you are human:
               <input name="bot-field" />
             </label>
           </p>
 
           <section className="widget-stack">
-            {WIDGET_CONFIGS.map((config, index) => {
-              const summary = widgetSummaries[index];
-              const selectedValue = values[config.id];
-              return (
-                <div key={config.id} className="widget-panel">
-                  <WidgetVariant
-                    config={config}
-                    value={selectedValue}
-                    onValueChange={(value) => handleWidgetChange(config.id, value)}
-                  />
-
-                  <input
-                    type="hidden"
-                    name={`${config.id}_selected_speed_kn`}
-                    value={selectedValue.toFixed(2)}
-                  />
-                  <input
-                    type="hidden"
-                    name={`${config.id}_travel_minutes`}
-                    value={summary.travelMinutes}
-                  />
-                  <input
-                    type="hidden"
-                    name={`${config.id}_minutes_delta`}
-                    value={summary.minutesDelta}
-                  />
-                  <input
-                    type="hidden"
-                    name={`${config.id}_co2_delta_kg`}
-                    value={summary.co2DeltaKg}
-                  />
-                  <input
-                    type="hidden"
-                    name={`${config.id}_reward_unlocked`}
-                    value={summary.rewardUnlocked ? "yes" : "no"}
-                  />
-
-                  {index < WIDGET_CONFIGS.length - 1 && (
-                    <div className="widget-divider" role="presentation" />
-                  )}
-                </div>
-              );
-            })}
+            {WIDGET_CONFIGS.map((config, index) => (
+              <div key={config.id} className="widget-panel">
+                <WidgetVariant
+                  config={config}
+                  value={values[config.id]}
+                  onValueChange={(value) => handleWidgetChange(config.id, value)}
+                />
+                {index < WIDGET_CONFIGS.length - 1 && <div className="widget-divider" role="presentation" />}
+              </div>
+            ))}
           </section>
 
-          <input type="hidden" name="widgetSummaryJson" value={summaryJson} />
+          <input type="hidden" name="widgetNarrative" value={widgetNarrative} />
 
           <div className="form-actions">
-            <button
-              type="submit"
-              className="submit-button"
-              disabled={submissionState === "submitting"}
-            >
+            <button type="submit" className="submit-button" disabled={submissionState === "submitting"}>
               {submissionState === "submitting" ? "Submitting…" : "Submit widget values"}
             </button>
             {submissionState === "success" && (
-              <p className="form-feedback form-feedback--success">
-                Thanks! The widget selections were sent.
-              </p>
+              <p className="form-feedback form-feedback--success">Thanks! The widget selections were sent.</p>
             )}
             {submissionState === "error" && (
               <p className="form-feedback form-feedback--error">
@@ -215,7 +198,7 @@ export default function App() {
 
       <footer className="page-footer">
         <p>
-          All widget values are submitted anonymously for demo purposes. No personal data is collected. This helps us evaluate what kind of slider works the best
+          All widget values are submitted anonymously for demo purposes. No personal data is collected. This helps us evaluate what kind of slider works the best.
         </p>
       </footer>
     </div>
