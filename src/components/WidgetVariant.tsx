@@ -1,21 +1,25 @@
 import clsx from "clsx";
-import { useMemo } from "react";
-
-export const SPEED_MIN = 14;
-export const SPEED_MAX = 22;
-export const SPEED_DEFAULT = 19;
-export const DEFAULT_TRAVEL_MINUTES = 120;
-export const DEFAULT_CO2_KG = 520;
+import { useMemo, useState } from "react";
 
 export type WidgetVariantType = "mood" | "reward-marker" | "co2-only" | "minimal";
+
+export type WidgetPaceConfig = {
+  baselineMinutes: number;
+  baselineCo2Kg: number;
+  minSpeedMultiplier: number;
+  maxSpeedMultiplier: number;
+  step?: number;
+  rewardMarkerMultiplier?: number;
+  defaultSpeedMultiplier?: number;
+};
 
 export type WidgetVariantConfig = {
   id: string;
   variant: WidgetVariantType;
   badge?: string;
   footnote?: string;
-  rewardMarkerSpeed?: number;
   rewardValueEur?: number;
+  pace: WidgetPaceConfig;
 };
 
 export type WidgetVariantProps = {
@@ -25,51 +29,74 @@ export type WidgetVariantProps = {
   compact?: boolean;
 };
 
-export const REWARD_TOLERANCE = 0.25;
+export const REWARD_TOLERANCE = 0.02;
 
-export function computeTravelMinutes(speedKnots: number) {
-  const travelMinutes = DEFAULT_TRAVEL_MINUTES * (SPEED_DEFAULT / speedKnots);
+export function computeTravelMinutes(baselineMinutes: number, speedMultiplier: number) {
+  const travelMinutes = baselineMinutes / speedMultiplier;
   return Math.round(travelMinutes);
 }
 
-export function computeMinutesDelta(speedKnots: number) {
-  return computeTravelMinutes(speedKnots) - DEFAULT_TRAVEL_MINUTES;
+export function computeMinutesDelta(baselineMinutes: number, speedMultiplier: number) {
+  return computeTravelMinutes(baselineMinutes, speedMultiplier) - baselineMinutes;
 }
 
-export function computeReductionPct(speedKnots: number) {
-  return ((SPEED_DEFAULT - speedKnots) / SPEED_DEFAULT) * 100;
+export function computeReductionPct(speedMultiplier: number) {
+  return (1 - speedMultiplier) * 100;
 }
 
-export function computeCo2DeltaKg(speedKnots: number) {
-  const normalizedSpeed = speedKnots / SPEED_DEFAULT;
-  const emissionRatio = Math.pow(normalizedSpeed, 3);
-  const delta = DEFAULT_CO2_KG * (1 - emissionRatio);
+export function computeSpeedDeltaPct(speedMultiplier: number) {
+  return (speedMultiplier - 1) * 100;
+}
+
+export function computeCo2DeltaKg(baselineCo2Kg: number, speedMultiplier: number) {
+  const emissionRatio = Math.pow(speedMultiplier, 3);
+  const delta = baselineCo2Kg * (1 - emissionRatio);
   return delta;
 }
 
 export function isRewardUnlocked(config: WidgetVariantConfig, value: number) {
-  if (!config.rewardMarkerSpeed) {
+  const marker = config.pace.rewardMarkerMultiplier;
+  if (typeof marker !== "number") {
     return false;
   }
-  return value <= config.rewardMarkerSpeed + REWARD_TOLERANCE;
+  return value <= marker + REWARD_TOLERANCE;
 }
 
-function formatDuration(totalMinutes: number) {
-  const sign = totalMinutes < 0 ? "-" : "";
-  const absolute = Math.abs(totalMinutes);
-  const hours = Math.floor(absolute / 60);
-  const minutes = absolute % 60;
-  return `${sign}${hours}h ${minutes.toString().padStart(2, "0")}m`;
+function formatDuration(minutes: number) {
+  const totalMinutes = Math.max(0, Math.round(Math.abs(minutes)));
+  const hours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  const parts: string[] = [];
+  if (hours > 0) {
+    parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
+  }
+  if (remainingMinutes > 0) {
+    parts.push(`${remainingMinutes} min`);
+  }
+  if (parts.length === 0) {
+    return "0 min";
+  }
+  return parts.join(" ");
 }
 
 function formatMinutesDelta(minutesDelta: number) {
   if (minutesDelta === 0) {
     return "Same arrival time";
   }
+  const duration = formatDuration(Math.abs(minutesDelta));
   if (minutesDelta > 0) {
-    return `Arrives +${minutesDelta} min later`;
+    return `Arrives +${duration} later`;
   }
-  return `Arrives ${Math.abs(minutesDelta)} min earlier`;
+  return `Arrives ${duration} earlier`;
+}
+
+function formatAddedMinutes(minutesDelta: number) {
+  if (minutesDelta === 0) {
+    return "No change";
+  }
+  const sign = minutesDelta > 0 ? "+" : "-";
+  const duration = formatDuration(Math.abs(minutesDelta));
+  return `${sign}${duration}`;
 }
 
 function formatCo2Delta(deltaKg: number) {
@@ -81,12 +108,20 @@ function formatCo2Delta(deltaKg: number) {
 }
 
 export default function WidgetVariant({ config, value, onValueChange, compact = false }: WidgetVariantProps) {
-  const reductionPct = useMemo(() => computeReductionPct(value), [value]);
-  const travelMinutes = useMemo(() => computeTravelMinutes(value), [value]);
-  const minutesDelta = useMemo(() => computeMinutesDelta(value), [value]);
-  const co2DeltaKg = useMemo(() => computeCo2DeltaKg(value), [value]);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const {
+    baselineMinutes,
+    baselineCo2Kg,
+    minSpeedMultiplier,
+    maxSpeedMultiplier,
+    step = 0.02,
+  } = config.pace;
 
-  const normalized = (value - SPEED_MIN) / (SPEED_MAX - SPEED_MIN);
+  const reductionPct = useMemo(() => computeReductionPct(value), [value]);
+  const minutesDelta = useMemo(() => computeMinutesDelta(baselineMinutes, value), [baselineMinutes, value]);
+  const co2DeltaKg = useMemo(() => computeCo2DeltaKg(baselineCo2Kg, value), [baselineCo2Kg, value]);
+
+  const normalized = (value - minSpeedMultiplier) / (maxSpeedMultiplier - minSpeedMultiplier);
   const clampedNormalized = Math.min(Math.max(normalized, 0), 1);
   const moodHue = 120 * (1 - clampedNormalized);
   const moodBackground = `linear-gradient(180deg, hsl(${moodHue}, 82%, 92%) 0%, #ffffff 100%)`;
@@ -98,10 +133,12 @@ export default function WidgetVariant({ config, value, onValueChange, compact = 
 
   const rewardUnlocked = isRewardUnlocked(config, value);
 
-  const rewardMarkerPercent = config.rewardMarkerSpeed
-    ? ((config.rewardMarkerSpeed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN)) * 100
+  const rewardMarkerPercent = typeof config.pace.rewardMarkerMultiplier === "number"
+    ? ((config.pace.rewardMarkerMultiplier - minSpeedMultiplier) / (maxSpeedMultiplier - minSpeedMultiplier)) * 100
     : 0;
   const clampedRewardMarkerPercent = Math.min(Math.max(rewardMarkerPercent, 0), 100);
+
+  const infoContentId = `${config.id}-info`;
 
   const isCompact = compact;
   const showContext = !isCompact;
@@ -129,9 +166,29 @@ export default function WidgetVariant({ config, value, onValueChange, compact = 
       )}
 
       <div className="widget-card__control">
-        <label className="widget-card__slider-label" htmlFor={`${config.id}-slider`}>
-          Trip pace
-        </label>
+        <div className="widget-card__control-header">
+          <label className="widget-card__slider-label" htmlFor={`${config.id}-slider`}>
+            Vote on the trip speed
+          </label>
+          <button
+            type="button"
+            className="widget-card__info-toggle"
+            aria-expanded={infoOpen}
+            aria-controls={infoContentId}
+            aria-label="How the trip speed slider works"
+            onClick={() => setInfoOpen((previous) => !previous)}
+          >
+            ?
+          </button>
+        </div>
+        {infoOpen && (
+          <div className="widget-card__info" id={infoContentId}>
+            <p>
+              Drag the slider to vote on how fast the ferry should sail. The captain averages everyone's choice. Slower speeds cut
+              CO₂ but add travel time. Faster speeds shorten the trip but use more fuel.
+            </p>
+          </div>
+        )}
         <div
           className={clsx(
             "widget-card__slider-shell",
@@ -141,15 +198,16 @@ export default function WidgetVariant({ config, value, onValueChange, compact = 
           <input
             id={`${config.id}-slider`}
             type="range"
-            min={SPEED_MIN}
-            max={SPEED_MAX}
-            step={0.25}
+            min={minSpeedMultiplier}
+            max={maxSpeedMultiplier}
+            step={step}
             value={value}
             onChange={(event) => onValueChange(Number(event.target.value))}
             className="widget-card__slider"
             style={{ background: sliderBackground }}
+            aria-describedby={infoOpen ? infoContentId : undefined}
           />
-          {config.variant === "reward-marker" && config.rewardMarkerSpeed && (
+          {config.variant === "reward-marker" && typeof config.pace.rewardMarkerMultiplier === "number" && (
             <span
               className="widget-card__reward-marker"
               style={{ left: `${clampedRewardMarkerPercent}%` }}
@@ -171,8 +229,8 @@ export default function WidgetVariant({ config, value, onValueChange, compact = 
               </span>
             </div>
             <div className="widget-card__stat">
-              <span className="widget-card__stat-label">Travel time</span>
-              <span className="widget-card__stat-value">{formatDuration(travelMinutes)}</span>
+              <span className="widget-card__stat-label">Added time</span>
+              <span className="widget-card__stat-value">{formatAddedMinutes(minutesDelta)}</span>
             </div>
             <div className="widget-card__stat">
               <span className="widget-card__stat-label">Impact</span>
@@ -233,7 +291,11 @@ export default function WidgetVariant({ config, value, onValueChange, compact = 
         {config.variant === "minimal" && (
           <>
             <div className="widget-card__pill">
-              {minutesDelta > 0 ? `Adds ${minutesDelta} min` : minutesDelta < 0 ? `Saves ${Math.abs(minutesDelta)} min` : "Keeps schedule"}
+              {minutesDelta > 0
+                ? `Adds ${formatDuration(minutesDelta)}`
+                : minutesDelta < 0
+                ? `Saves ${formatDuration(Math.abs(minutesDelta))}`
+                : "Keeps schedule"}
             </div>
             <div className="widget-card__pill">
               {reductionPct >= 0

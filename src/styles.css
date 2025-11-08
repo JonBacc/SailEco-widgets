@@ -127,8 +127,14 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 1.5rem;
-  align-items: flex-end;
-  text-align: right;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.booking-shell__header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .booking-shell__operator {
@@ -137,7 +143,6 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-weight: 600;
-  text-align: right;
   color: rgba(11, 29, 51, 0.55);
 }
 
@@ -152,16 +157,40 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-  align-items: flex-end;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .booking-shell__meta {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
   font-size: 0.85rem;
   color: rgba(11, 29, 51, 0.65);
-  text-align: right;
+  text-align: left;
+}
+
+.booking-shell__meta-item {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.booking-shell__meta-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+  color: rgba(11, 29, 51, 0.55);
+}
+
+.booking-shell__meta-value {
+  font-weight: 600;
+  color: rgba(11, 29, 51, 0.78);
 }
 
 .booking-shell__grid {
@@ -226,9 +255,63 @@ body {
   margin: 0 auto;
 }
 
+.booking-shell__scenario-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1.1rem 1rem;
+  border-radius: 14px;
+  border: 2px dashed rgba(11, 29, 51, 0.2);
+  background: rgba(11, 29, 51, 0.04);
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto 1.5rem;
+}
+
+.booking-shell__scenario-chip {
+  align-self: flex-start;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(31, 111, 235, 0.16);
+  color: var(--marine-tide);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.booking-shell__scenario-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--marine-deep);
+}
+
+.booking-shell__scenario-copy {
+  margin: 0;
+  line-height: 1.6;
+  color: rgba(11, 29, 51, 0.7);
+}
+
 .booking-shell__widget-slot {
   display: flex;
   justify-content: flex-start;
+}
+
+.booking-shell__widget-hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  color: rgba(11, 29, 51, 0.55);
+  line-height: 1.4;
+}
+
+.booking-shell__widget-hint-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  color: rgba(11, 29, 51, 0.6);
+  margin-right: 0.35rem;
 }
 
 .booking-shell__widget-slot .widget-card {
@@ -455,12 +538,61 @@ body {
   gap: 0.8rem;
 }
 
+.widget-card__control-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .widget-card__slider-label {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-weight: 600;
   color: rgba(11, 29, 51, 0.5);
+}
+
+.widget-card__info-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  border: 1px solid rgba(11, 29, 51, 0.18);
+  background: rgba(11, 29, 51, 0.05);
+  color: rgba(11, 29, 51, 0.55);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.widget-card__info-toggle:hover,
+.widget-card__info-toggle:focus {
+  background: rgba(31, 111, 235, 0.12);
+  color: var(--marine-tide);
+}
+
+.widget-card__info-toggle:focus {
+  outline: 2px solid rgba(31, 111, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.widget-card__info {
+  padding: 0.65rem 0.75rem;
+  margin: -0.3rem 0 0.2rem;
+  border-radius: 12px;
+  background: rgba(11, 29, 51, 0.06);
+  border: 1px solid rgba(11, 29, 51, 0.08);
+  color: rgba(11, 29, 51, 0.7);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.widget-card__info p {
+  margin: 0;
 }
 
 .widget-card__slider-shell {
@@ -644,12 +776,29 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .booking-shell__header {
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .booking-shell__header-main {
+    align-items: flex-start;
+    text-align: left;
+  }
+
   .booking-shell__summary {
     margin: 0;
     border-radius: 0;
     box-shadow: none;
     border: none;
     padding: 1.25rem 1.1rem 1.5rem;
+  }
+
+  .booking-shell__scenario-card {
+    padding: 1rem 0.9rem;
+    border-radius: 12px;
+    margin: 0 0 1.2rem;
+    max-width: 100%;
   }
 
   .booking-shell__header-aux {
@@ -660,6 +809,10 @@ body {
 
   .booking-shell__meta {
     text-align: left;
+  }
+  
+  .booking-shell__meta-item {
+    justify-content: flex-start;
   }
 
   .booking-shell__itinerary {
