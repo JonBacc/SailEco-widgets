@@ -471,10 +471,10 @@ export default function App() {
             <section className="view-panel view-panel--intro" aria-hidden={stageIndex !== 0}>
               <div className="landing-card">
                 <span className="masthead__eyebrow">SailEco demo</span>
-                <h1 className="landing-card__title">Explore how one SailEco mood widget adapts to five booking scenarios</h1>
+                <h1 className="landing-card__title">Explore how one SailEco trip speed slider work in six booking scenarios</h1>
                 <p className="landing-card__lede">
-                  You will see five different booking situations, all using the same SailEco mood widget. Read the scenario, move the
-                  slider to what feels right, and continue to the next screen to record your choice. At the end there will also be an option to give a comment.
+                  You will see six different booking situations, all using the same SailEco widget. Read the scenario, move the
+                  slider to what feels right, and continue to the next screen to record your choice. At the end there will also be an option to give some feedback, which will help us in the development.
                 </p>
                 <button type="button" className="primary-button" onClick={handleStartFlow}>
                   Start the survey
