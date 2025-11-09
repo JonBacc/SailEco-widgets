@@ -228,6 +228,50 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
+    id: "scenario-umea-vaasa-return",
+    formKey: "umea-vaasa-return",
+    title: "Sunday night home to Vaasa",
+    description:
+      "It's Sunday evening after a packed weekend in Umeå. You and your partner are taking the late ferry home to Vaasa so you can be at work first thing Monday. You're weighing extra rest on board against getting into bed on time.",
+    operatorLine: "Wasaline · Aurora Botnia",
+    routeTitle: "Umeå → Vaasa · Evening return",
+    travelMeta: [
+      { label: "Travel date", value: "Sun 3 Aug 2026" },
+      { label: "Passengers", value: "2 adults" },
+      { label: "Cabin", value: "Evening lounge seats" },
+      { label: "Extras", value: "Takeaway dinner + coffee" },
+    ],
+    pace: {
+      baselineMinutes: 240,
+      baselineCo2Kg: Math.round(CO2_PER_MINUTE * 240),
+      ...DEFAULT_PACE_RANGE,
+      minSpeedMultiplier: 0.85,
+      maxSpeedMultiplier: 1.08,
+      defaultSpeedMultiplier: 1,
+    },
+    departure: {
+      portLabel: "Depart",
+      portName: "Umeå Holmsund Terminal",
+      time: "20:00",
+    },
+    arrival: {
+      portLabel: "Arrive",
+      portName: "Vaasa Passenger Harbour",
+      time: "23:45 (usual pace)",
+    },
+    fareLines: [
+      { label: "Sailing fare", value: "€148" },
+      { label: "Evening lounge", value: "€48" },
+      { label: "Vehicle deck", value: "€74" },
+      { label: "Fuel surcharge", value: "€18" },
+      { label: "Total today", value: "€288", emphasize: true },
+    ],
+    widget: {
+      badge: "Mood vibes",
+      footnote: "Slide left for a calmer ride and time to reset. Slide right to reach Vaasa and your bed sooner.",
+    },
+  },
+  {
     id: "scenario-winter-crossing",
     formKey: "winter-crossing",
     title: "Winter evening to Tallinn",
@@ -430,7 +474,7 @@ export default function App() {
                 <h1 className="landing-card__title">Explore how one SailEco mood widget adapts to five booking scenarios</h1>
                 <p className="landing-card__lede">
                   You will see five different booking situations, all using the same SailEco mood widget. Read the scenario, move the
-                  slider to what feels right, and continue to the next screen to record your choice.
+                  slider to what feels right, and continue to the next screen to record your choice. At the end there will also be an option to give a comment.
                 </p>
                 <button type="button" className="primary-button" onClick={handleStartFlow}>
                   Start the survey
@@ -537,9 +581,19 @@ export default function App() {
               <div className="final-card">
                 <h2>Send the SailEco widget selections</h2>
                 <p>
-                  Thanks for completing the five scenarios. We only capture slider speeds and their travel / CO₂ deltas to see how
+                  Thanks for completing the six scenarios. We only capture slider speeds and their travel / CO₂ deltas to see how
                   people react in different contexts. We never ask for personal details.
                 </p>
+                <label className="final-card__feedback-label" htmlFor="survey-feedback">
+                  Optional feedback (Finnish, Swedish, or English)
+                </label>
+                <textarea
+                  id="survey-feedback"
+                  name="participant_feedback"
+                  className="final-card__feedback"
+                  placeholder="Tell us how the widget felt, what confused you, or what you liked."
+                  rows={4}
+                />
                 <button type="button" className="to-start-button to-start-button--inline" onClick={handleResetFlow}>
                   To the start
                 </button>

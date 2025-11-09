@@ -472,6 +472,27 @@ body {
   gap: 1.25rem;
   max-width: 420px;
   width: 100%;
+.final-card__feedback-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(11, 29, 51, 0.7);
+}
+.final-card__feedback {
+  width: 100%;
+  margin-top: 0.45rem;
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(11, 29, 51, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--marine-deep);
+  resize: vertical;
+  min-height: 150px;
+}
+.final-card__feedback::placeholder {
+  color: rgba(11, 29, 51, 0.45);
+}
   margin: 0 auto;
 }
 

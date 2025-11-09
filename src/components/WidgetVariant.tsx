@@ -185,7 +185,8 @@ export default function WidgetVariant({ config, value, onValueChange, compact = 
           <div className="widget-card__info" id={infoContentId}>
             <p>
               Drag the slider to vote on how fast the ferry should sail. The captain averages everyone's choice. Slower speeds cut
-              CO₂ but add travel time. Faster speeds shorten the trip but use more fuel.
+              CO2 but add travel time. Faster speeds shorten the trip but use more fuel. Fuel use climbs fast with speed: doubling the
+              pace can push emissions to roughly four times higher.
             </p>
           </div>
         )}
