@@ -1,4 +1,4 @@
-import { FormEvent, Fragment, useEffect, useMemo, useState } from "react";
+import { FormEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import WidgetVariant, {
   computeCo2DeltaKg,
   computeMinutesDelta,
@@ -317,10 +317,38 @@ const SCENARIOS: Scenario[] = [
   },
 ];
 
+const AGE_GROUP_OPTIONS = [
+  { value: "under-18", label: "Under 18" },
+  { value: "18-24", label: "18-24" },
+  { value: "25-34", label: "25-34" },
+  { value: "35-44", label: "35-44" },
+  { value: "45-54", label: "45-54" },
+  { value: "55-64", label: "55-64" },
+  { value: "65-plus", label: "65+" },
+] as const;
+
+const OCCUPANCY_OPTIONS = [
+  { value: "student", label: "Student" },
+  { value: "working-full-time", label: "Working full time" },
+  { value: "working-part-time", label: "Working part time" },
+  { value: "self-employed", label: "Self-employed" },
+  { value: "caregiver", label: "Primary caregiver" },
+  { value: "retired", label: "Retired" },
+  { value: "looking-for-work", label: "Looking for work" },
+  { value: "other", label: "Other" },
+] as const;
+
 type ScenarioId = Scenario["id"];
 type WidgetValues = Record<ScenarioId, number>;
 
 type SubmissionState = "idle" | "submitting" | "success" | "error";
+
+function createInitialWidgetValues(): WidgetValues {
+  return SCENARIOS.reduce<WidgetValues>((accumulator, scenario) => {
+    accumulator[scenario.id] = scenario.pace.defaultSpeedMultiplier ?? 1;
+    return accumulator;
+  }, {} as WidgetValues);
+}
 
 function encodeFormData(formData: FormData) {
   const params = new URLSearchParams();
@@ -361,15 +389,11 @@ function formatSpeedPctDelta(deltaPct: number) {
 }
 
 export default function App() {
-  const [values, setValues] = useState<WidgetValues>(() => {
-    return SCENARIOS.reduce<WidgetValues>((accumulator, scenario) => {
-      accumulator[scenario.id] = scenario.pace.defaultSpeedMultiplier ?? 1;
-      return accumulator;
-    }, {} as WidgetValues);
-  });
+  const [values, setValues] = useState<WidgetValues>(() => createInitialWidgetValues());
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stageIndex, setStageIndex] = useState(0);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const totalStages = SCENARIOS.length + 2; // intro + scenario panels + final submit
   const isFinalStage = stageIndex === totalStages - 1;
@@ -419,7 +443,17 @@ export default function App() {
   };
 
   const handleResetFlow = () => {
+    setValues(createInitialWidgetValues());
+    setSubmissionState("idle");
+    setErrorMessage(null);
     setStageIndex(0);
+    if (formRef.current) {
+      formRef.current.reset();
+    }
+  };
+
+  const handleReturnToStart = () => {
+    handleResetFlow();
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -447,6 +481,7 @@ export default function App() {
   return (
     <div className="page-shell">
       <form
+        ref={formRef}
         className="stage-form"
         name="widget-values-for-scenarios"
         method="POST"
@@ -470,10 +505,10 @@ export default function App() {
           >
             <section className="view-panel view-panel--intro" aria-hidden={stageIndex !== 0}>
               <div className="landing-card">
-                <span className="masthead__eyebrow">SailEco demo</span>
-                <h1 className="landing-card__title">Explore how one SailEco trip speed slider work in six booking scenarios</h1>
+                <span className="masthead__eyebrow">PaceCtrl demo</span>
+                <h1 className="landing-card__title">Explore how one PaceCtrl trip speed slider works in six booking scenarios</h1>
                 <p className="landing-card__lede">
-                  You will see six different booking situations, all using the same SailEco widget. Read the scenario, move the
+                  You will see six different booking situations, all using the same PaceCtrl widget. Read the scenario, move the
                   slider to what feels right, and continue to the next screen to record your choice. At the end there will also be an option to give some feedback, which will help us in the development.
                 </p>
                 <button type="button" className="primary-button" onClick={handleStartFlow}>
@@ -579,11 +614,38 @@ export default function App() {
 
             <section className="view-panel view-panel--final" aria-hidden={!isFinalStage}>
               <div className="final-card">
-                <h2>Send the SailEco widget selections</h2>
+                <h2>Send the PaceCtrl widget selections</h2>
                 <p>
-                  Thanks for completing the six scenarios. We only capture slider speeds and their travel / CO₂ deltas to see how
-                  people react in different contexts. We never ask for personal details.
+                  We capture slider speeds and their travel / CO₂ deltas to understand how different contexts shape choices. If you have a moment, these optional details help us compare results across groups.
                 </p>
+                <fieldset className="final-card__fieldset">
+                  <legend className="final-card__legend">
+                    Age group <span className="final-card__optional">(optional)</span>
+                  </legend>
+                  <div className="final-card__choices">
+                    {AGE_GROUP_OPTIONS.map((option) => (
+                      <label key={option.value} className="final-card__choice">
+                        <input type="radio" name="participant_age_group" value={option.value} />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <fieldset className="final-card__fieldset">
+                  <legend className="final-card__legend">
+                    Occupancy <span className="final-card__optional">(optional)</span>
+                  </legend>
+                  <div className="final-card__choices">
+                    {OCCUPANCY_OPTIONS.map((option) => (
+                      <label key={option.value} className="final-card__choice">
+                        <input type="radio" name="participant_occupancy" value={option.value} />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
                 <label className="final-card__feedback-label" htmlFor="survey-feedback">
                   Optional feedback (Finnish, Swedish, or English)
                 </label>
@@ -643,6 +705,20 @@ export default function App() {
             </Fragment>
           );
         })}
+
+        {submissionState === "success" && (
+          <div className="final-overlay" role="dialog" aria-modal="true" aria-labelledby="final-overlay-title">
+            <div className="final-overlay__content">
+              <h3 id="final-overlay-title">Thank you for filling in the survey!</h3>
+              <p className="final-overlay__description">
+                We have received your selections.
+              </p>
+              <button type="button" className="final-overlay__button" onClick={handleReturnToStart}>
+                Go back to start
+              </button>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );

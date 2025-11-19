@@ -423,6 +423,105 @@ body {
   line-height: 1.7;
 }
 
+.final-card__fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.final-card__legend {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--marine-deep);
+}
+
+.final-card__optional {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.final-card__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.4rem;
+}
+
+.final-card__choice {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.final-card__choice input {
+  margin: 0;
+  accent-color: var(--marine-tide);
+}
+
+.final-card__choice span {
+  line-height: 1.2;
+}
+
+.final-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 29, 51, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 100;
+}
+
+.final-overlay__content {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 32px 64px rgba(11, 29, 51, 0.24);
+  max-width: 420px;
+  width: min(100%, 420px);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  text-align: center;
+}
+
+.final-overlay__content h3 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: var(--marine-deep);
+}
+
+.final-overlay__description {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.final-overlay__button {
+  align-self: center;
+  background: linear-gradient(135deg, var(--marine-deep), var(--marine-tide));
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 2.4rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 16px 32px rgba(31, 111, 235, 0.22);
+}
+
+.final-overlay__button:hover {
+  box-shadow: 0 20px 36px rgba(31, 111, 235, 0.28);
+}
+
 .form-actions {
   display: flex;
   flex-direction: column;
